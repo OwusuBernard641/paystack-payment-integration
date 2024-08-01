@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Paystack Payment</title>
+    <script src="https://js.paystack.co/v2/inline.js"></script>
+    <!-- Paystack CDN -->
+  </head>
+  <body>
+    <button id="payButton">Pay with Paystack</button>
+
+    <script>
+      const SERVER_URL = "http://localhost:3000";
+      document
+        .getElementById("payButton")
+        .addEventListener("click", async () => {
+          try {
+            // Make a request to your backend to initialize the transaction
+            const response = await fetch(
+              `${SERVER_URL}/api/initialize-transaction`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  email: "bernardowusu641@example.com", // Customer's email
+                  amount: 500000, // Amount in kobo
+                }),
+              }
+            );
+
+            const data = await response.json();
+            console.log(data);
+
+            if (data.status) {
+              const paystack = PaystackPop.setup({
+                key: "pk_test_c9d1c93274178f437d7bc13614d0bfd7ae418da5", // Replace with your Paystack public key
+                email: "bernardowusu641@example.com", // Customer's email
+                amount: 500000, // Amount in kobo
+                ref: data.data.reference, // Use the reference from the backend
+                callback: function (response) {
+                  // Handle the response here
+                  // e.g., verify the transaction on your server
+                  fetch(
+                    `${SERVER_URL}/api/verify-transaction/${response.reference}`
+                  )
+                    .then((res) => res.json())
+                    .then((data) =>
+                      console.log("Transaction verification result:", data)
+                    )
+                    .catch((error) =>
+                      console.error("Verification error:", error)
+                    );
+                },
+                onClose: function () {
+                  // Handle the case when the user closes the popup
+                  console.log("Payment popup closed");
+                },
+              });
+
+              paystack.openIframe();
+            } else {
+              console.error("Failed to initialize transaction", data.message);
+            }
+          } catch (error) {
+            console.error("Error initializing transaction", error);
+          }
+        });
+    </script>
+  </body>
+</html>
